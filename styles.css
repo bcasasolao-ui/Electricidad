@@ -1,0 +1,545 @@
+/* VARIABLES DE DISEÑO (SISTEMA DE DISEÑO CORPORATIVO) */
+:root {
+    --primary-dark: #0A2540;   /* Azul Corporativo Oscuro */
+    --accent-color: #00D4B2;   /* Celeste / Verde Eléctrico de acento */
+    --accent-blue: #0073EA;    /* Azul Eléctrico para CTA */
+    --bg-light: #F8FAFC;       /* Gris claro de fondo general */
+    --surface-white: #FFFFFF;  /* Fondo de Tarjetas y contenedores */
+    --text-main: #334155;      /* Texto principal legible */
+    --text-muted: #64748B;     /* Texto secundario */
+    --success-color: #10B981;  /* Verde Confirmaciones */
+    --warning-color: #F59E0B;  /* Amarillo Alertas */
+    --border-color: #E2E8F0;   /* Bordes limpios */
+    --radius-lg: 12px;
+    --radius-md: 8px;
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* RESET GENERAL */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg-light);
+    color: var(--text-main);
+    line-height: 1.6;
+}
+
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.text-center {
+    text-align: center;
+}
+
+/* BOTONES */
+.btn {
+    display: inline-block;
+    padding: 12px 24px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    border-radius: var(--radius-md);
+    border: none;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    text-decoration: none;
+}
+
+.btn-primary {
+    background-color: var(--accent-blue);
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #0056B3;
+    transform: translateY(-2px);
+}
+
+.btn-accent {
+    background-color: var(--primary-dark);
+    color: white;
+}
+
+.btn-accent:hover {
+    background-color: #133959;
+    transform: translateY(-2px);
+}
+
+.btn-outline {
+    background-color: transparent;
+    border: 2px solid var(--accent-blue);
+    color: var(--accent-blue);
+}
+
+.btn-outline:hover {
+    background-color: var(--accent-blue);
+    color: white;
+}
+
+.btn-success {
+    background-color: var(--success-color);
+    color: white;
+}
+
+.btn-success:hover {
+    background-color: #059669;
+    transform: translateY(-2px);
+}
+
+.btn-block {
+    display: block;
+    width: 100%;
+}
+
+/* ENCABEZADO / NAVBAR */
+.main-header {
+    background-color: var(--primary-dark);
+    color: white;
+    padding: 15px 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+}
+
+.navbar-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.logo-text {
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.logo-text small {
+    color: var(--accent-color);
+    font-size: 0.9rem;
+    font-weight: 400;
+}
+
+.main-nav {
+    display: none; /* Mobile first hidden */
+}
+
+/* HERO SECTION / CONSULTA DE SALDO */
+.hero-section {
+    background: linear-gradient(135deg, var(--primary-dark) 0%, #1E3A8A 100%);
+    color: white;
+    padding: 60px 0;
+}
+
+.hero-info h1 {
+    font-size: 2rem;
+    margin-bottom: 15px;
+    line-height: 1.2;
+}
+
+.hero-info p {
+    color: #93C5FD;
+    margin-bottom: 30px;
+    font-size: 1.1rem;
+}
+
+.hero-card {
+    background-color: var(--surface-white);
+    color: var(--text-main);
+    padding: 30px;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+}
+
+/* FORMULARIOS COMUNES */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+}
+
+.form-group input, .form-select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: 1rem;
+    transition: var(--transition-smooth);
+}
+
+.form-group input:focus, .form-select:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 3px rgba(0, 115, 234, 0.15);
+}
+
+.form-hint {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    display: block;
+    margin-top: 5px;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+/* RESULTADOS DE SALDO */
+.balance-result {
+    margin-top: 15px;
+    padding: 20px;
+    background-color: #F0FDF4;
+    border-left: 4px solid var(--success-color);
+    border-radius: var(--radius-md);
+    animation: fadeIn 0.4s ease;
+}
+
+.balance-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.balance-header strong {
+    font-size: 1.5rem;
+    color: var(--success-color);
+}
+
+.balance-detail {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin-bottom: 5px;
+}
+
+/* SECCIÓN CORE: FORMAS DE PAGO */
+.payment-methods-section {
+    padding: 60px 20px;
+}
+
+.section-title {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.section-title h2 {
+    font-size: 1.8rem;
+    color: var(--primary-dark);
+}
+
+/* Grid de tarjetas que actúan como Tabs */
+.methods-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.method-card {
+    background-color: var(--surface-white);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+}
+
+.method-card:hover {
+    border-color: var(--accent-blue);
+    transform: translateY(-4px);
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
+}
+
+.method-card.active {
+    border-color: var(--accent-blue);
+    background-color: #EFF6FF;
+}
+
+.method-icon {
+    font-size: 2rem;
+    margin-bottom: 10px;
+}
+
+.method-card h3 {
+    font-size: 1.05rem;
+    color: var(--primary-dark);
+    margin-bottom: 5px;
+}
+
+.method-card p {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+/* Contenido de Tabs */
+.methods-content-wrapper {
+    background-color: var(--surface-white);
+    border-radius: var(--radius-lg);
+    padding: 30px;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+    border: 1px solid var(--border-color);
+}
+
+.tab-content {
+    display: none;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.secure-badge {
+    background-color: #ECFDF5;
+    color: #065F46;
+    padding: 10px;
+    border-radius: var(--radius-md);
+    font-size: 0.85rem;
+    text-align: center;
+    margin-bottom: 20px;
+    font-weight: 500;
+}
+
+.inner-form {
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+/* Estilos de sub-pestañas */
+.bank-logos-grid, .info-cards-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.bank-item, .info-subcard {
+    background-color: var(--bg-light);
+    padding: 15px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+}
+
+.info-subcard h4 {
+    color: var(--primary-dark);
+    margin-bottom: 5px;
+}
+
+.steps-box, .warning-box {
+    margin-top: 20px;
+    padding: 20px;
+    border-radius: var(--radius-md);
+}
+
+.steps-box { background-color: #F8FAFC; border-left: 4px solid var(--accent-blue); }
+.warning-box { background-color: #FFFBEB; border-left: 4px solid var(--warning-color); color: #92400E;}
+
+/* MODAL / POP-UP */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(10, 37, 64, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 200;
+    transition: var(--transition-smooth);
+}
+
+.modal-card {
+    background-color: var(--surface-white);
+    padding: 40px;
+    border-radius: var(--radius-lg);
+    max-width: 450px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+/* Spinner Animado */
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid var(--border-color);
+    border-top-color: var(--accent-blue);
+    border-radius: 50%;
+    margin: 0 auto 20px;
+    animation: spin 1s linear infinite;
+}
+
+.success-icon {
+    width: 60px;
+    height: 60px;
+    background-color: #D1FAE5;
+    color: var(--success-color);
+    font-size: 2rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+}
+
+.receipt-code {
+    background-color: var(--bg-light);
+    padding: 10px;
+    margin: 15px 0;
+    font-size: 0.9rem;
+    border-radius: var(--radius-md);
+}
+
+/* FOOTER */
+.main-footer {
+    background-color: var(--primary-dark);
+    color: white;
+    padding: 40px 0 20px;
+    margin-top: 60px;
+}
+
+.footer-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 30px;
+    margin-bottom: 30px;
+}
+
+.footer-col h4 {
+    color: var(--accent-color);
+    margin-bottom: 15px;
+}
+
+.footer-col a {
+    display: block;
+    color: #93C5FD;
+    text-decoration: none;
+    margin-bottom: 10px;
+    transition: var(--transition-smooth);
+}
+
+.footer-col a:hover {
+    color: white;
+}
+
+.security-text {
+    margin-top: 15px;
+    font-size: 0.85rem;
+    color: var(--accent-color);
+}
+
+.footer-bottom {
+    border-top: 1px solid #1E3A8A;
+    padding-top: 20px;
+    font-size: 0.85rem;
+    color: #93C5FD;
+}
+
+/* ANIMACIONES */
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* MEDIA QUERIES (ESCRITORIO / ADAPTACIÓN RESPONSIVA) */
+@media (min-width: 768px) {
+    .main-nav {
+        display: flex;
+        gap: 25px;
+    }
+    .nav-link {
+        color: #93C5FD;
+        text-decoration: none;
+        font-weight: 500;
+        transition: var(--transition-smooth);
+    }
+    .nav-link:hover {
+        color: white;
+    }
+    .hero-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        align-items: center;
+        gap: 50px;
+    }
+    .hero-info h1 {
+        font-size: 3rem;
+    }
+    .methods-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+    .bank-logos-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .info-cards-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    .footer-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* ========================================== */
+/* CONTROL DE VISTAS POR ROL (ADMIN / USER)   */
+/* ========================================== */
+body[data-role="user"] .view-admin {
+    display: none !important;
+}
+
+body[data-role="admin"] .view-user {
+    display: none !important;
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+    background-color: var(--surface-white);
+    font-size: 0.95rem;
+}
+
+.admin-table th, .admin-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.admin-table th {
+    background-color: var(--bg-light);
+    color: var(--primary-dark);
+    font-weight: 600;
+}
+
+.admin-table tbody tr:hover {
+    background-color: #F8FAFC;
+}

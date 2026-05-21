@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EEGSA - Pago de Servicios de Electricidad</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./styles.css">
+</head>
+<body data-role="user"> <header class="main-header">
+        <div class="container navbar-container">
+            <div class="logo">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" fill="var(--accent-color)" stroke="var(--accent-color)" stroke-width="2" stroke-linejoin="round"/>
+                </svg>
+                <span class="logo-text">EEGSA <small>Pagos</small></span>
+            </div>
+            <nav class="main-nav">
+                <a href="#consultar" class="nav-link view-user">Consulta</a>
+                <a href="#formas-pago" class="nav-link view-user">Formas de Pago</a>
+                <a href="#admin-panel" class="nav-link view-admin">Panel Admin</a>
+                <a href="#soporte" class="nav-link">Soporte</a>
+            </nav>
+            <div class="auth-action">
+                <select id="role-selector" class="form-select" style="padding: 8px 12px; width: auto; background-color: var(--surface-white); color: var(--primary-dark);">
+                    <option value="user">Vista: Cliente</option>
+                    <option value="admin">Vista: Administrador</option>
+                </select>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section id="consultar" class="hero-section view-user">
+            <div class="container hero-grid">
+                <div class="hero-info">
+                    <h1>Paga tu servicio de luz de forma rápida y segura</h1>
+                    <p>Consulta tu saldo pendiente ingresando los datos de tu factura y realiza tu pago en línea sin salir de casa.</p>
+                </div>
+                <div class="hero-card">
+                    <form id="form-consulta" class="payment-form">
+                        <div class="form-group">
+                            <label for="id-contador">Número de Contador (NIS)</label>
+                            <input type="text" id="id-contador" placeholder="Ej. 123456" required>
+                            <span class="form-hint">Prueba con 123456 (2 meses) o 789012 (1 mes)</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="correlativo">Número Correlativo</label>
+                            <input type="text" id="correlativo" placeholder="Ej. COR-98765" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Consultar Saldo</button>
+                    </form>
+                    
+                    <div id="error-consulta" class="warning-box hidden" style="margin-top:15px; background-color:#FEE2E2; border-color:#EF4444; color:#991B1B;">
+                        <p>⚠️ No se encontraron registros con los datos ingresados. Verifique e intente de nuevo.</p>
+                    </div>
+
+                    <div id="resultado-saldo" class="balance-result hidden">
+                        <div class="balance-header">
+                            <span>Total Pendiente</span>
+                            <strong id="monto-luz">Q 0.00</strong>
+                        </div>
+                        <p class="balance-detail">👤 <strong>Titular:</strong> <span id="nombre-titular">---</span></p>
+                        <p class="balance-detail">🏠 <strong>Dirección:</strong> <span id="direccion-titular">---</span></p>
+                        <p class="balance-detail">📅 <strong>Recibos pendientes:</strong> <span id="meses-acumulados">0</span></p>
+                        <a href="#formas-pago" class="btn btn-success btn-block text-center" style="margin-top: 15px;">Proceder a Pagar</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="formas-pago" class="payment-methods-section container view-user">
+            <div class="section-title">
+                <h2>Formas de Pago Disponibles</h2>
+                <p>Elige la opción que mejor se adapte a tus necesidades</p>
+            </div>
+
+            <div class="methods-grid">
+                <div class="method-card active" data-tab="online">
+                    <div class="method-icon">💳</div>
+                    <h3>Pago en Línea</h3>
+                    <p>Tarjeta de Crédito o Débito</p>
+                </div>
+                <div class="method-card" data-tab="banca">
+                    <div class="method-icon">📱</div>
+                    <h3>Banca Móvil</h3>
+                    <p>Bancos del sistema</p>
+                </div>
+                <div class="method-card" data-tab="ventanilla">
+                    <div class="method-icon">🏦</div>
+                    <h3>Ventanilla / ATM</h3>
+                    <p>Pagos físicos y cajeros</p>
+                </div>
+                <div class="method-card" data-tab="parcial">
+                    <div class="method-icon">📄</div>
+                    <h3>Pago Parcial</h3>
+                    <p>Convenios de 2 meses o más</p>
+                </div>
+            </div>
+
+            <div class="methods-content-wrapper">
+                <div id="tab-online" class="tab-content active">
+                    <div class="secure-badge">🔒 Conexión cifrada de alta seguridad (Canal: PASARELA_LINEA)</div>
+                    <form id="form-pago-linea" class="inner-form">
+                        <div class="form-group">
+                            <label for="card-name">Nombre en la Tarjeta</label>
+                            <input type="text" id="card-name" required placeholder="JUAN PEREZ">
+                        </div>
+                        <div class="form-group">
+                            <label for="card-number">Número de Tarjeta</label>
+                            <input type="text" id="card-number" maxlength="19" placeholder="4000 1234 5678 9010" required>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="card-exp">Expiración (MM/AA)</label>
+                                <input type="text" id="card-exp" maxlength="5" placeholder="12/29" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="card-cvv">CVV</label>
+                                <input type="password" id="card-cvv" maxlength="4" placeholder="***" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-accent btn-block">Pagar Monto Consultado</button>
+                    </form>
+                </div>
+
+                <div id="tab-banca" class="tab-content">
+                    <div class="banca-instructions">
+                        <p>Puedes pagar desde la app de tu banco usando tu <strong>Número de Contador</strong>. Se registrará bajo el canal <code>SISTEMA_BANCARIO</code>.</p>
+                        <div class="bank-logos-grid">
+                            <div class="bank-item">🏦 Banco Industrial (Bi en Línea)</div>
+                            <div class="bank-item">🏦 Banrural (Banca Virtual)</div>
+                            <div class="bank-item">🏦 G&T Continental</div>
+                            <div class="bank-item">🏦 BAM (BAMnet)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-ventanilla" class="tab-content">
+                    <p>Puntos de atención física para el canal <code>SISTEMA_BANCARIO</code> u <code>OFICINA_EMPRESA</code>:</p>
+                    <div class="info-cards-grid">
+                        <div class="info-subcard">
+                            <h4>Agencias Bancarias</h4>
+                            <p>Presenta tu número de contador en cualquier ventanilla.</p>
+                        </div>
+                        <div class="info-subcard">
+                            <h4>Cajeros Automáticos</h4>
+                            <p>Utiliza la red 5B seleccionando Pago de Servicios -> EEGSA.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-parcial" class="tab-content">
+                    <div id="parcial-restriccion" class="warning-box">
+                        <h4>Aviso Importante</h4>
+                        <p>La solicitud de pago parcial aplica únicamente si tu consulta en base de datos arroja un saldo acumulado de <strong>2 meses o más</strong>.</p>
+                    </div>
+                    <form id="form-pago-parcial" class="inner-form hidden">
+                        <p>Tu cuenta califica para un abono parcial sobre los recibos pendientes más antiguos:</p>
+                        <div class="form-group">
+                            <label for="porcentaje-pago">Monto a abonar</label>
+                            <select id="porcentaje-pago" class="form-select">
+                                <option value="50">Abonar el 50% del saldo total</option>
+                                <option value="75">Abonar el 75% del saldo total</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Generar Boleta de Pago Parcial</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <section id="admin-panel" class="container view-admin" style="padding: 60px 20px;">
+            <div class="section-title">
+                <h2>Panel de Control del Administrador</h2>
+                <p>Monitoreo en tiempo real de transacciones guardadas en la base de datos de Azure</p>
+            </div>
+            
+            <div class="methods-content-wrapper">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3>Historial General de Pagos Procesados</h3>
+                    <button id="btn-refresh-admin" class="btn btn-primary">🔄 Actualizar Datos</button>
+                </div>
+                
+                <div style="overflow-x: auto;">
+                    <table class="admin-table" id="tabla-pagos-admin">
+                        <thead>
+                            <tr>
+                                <th>Contador (NIS)</th>
+                                <th>Monto Pagado</th>
+                                <th>Canal de Pago</th>
+                                <th>Fecha del Registro</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="4" class="text-center" style="padding: 20px; color: var(--text-muted);">Haga clic en 'Actualizar Datos' para cargar la información de Azure.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div id="payment-modal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <div id="modal-loader" class="modal-loader-content">
+                <div class="spinner"></div>
+                <h3>Procesando con la pasarela...</h3>
+                <p>Insertando registro seguro en <code>pagos_procesados</code>...</p>
+            </div>
+            <div id="modal-success" class="modal-success-content hidden">
+                <div class="success-icon">✓</div>
+                <h3>¡Transacción Exitosa!</h3>
+                <p id="modal-message"></p>
+                <div class="receipt-code">
+                    <p><strong>Código Auth (DB):</strong> <span id="auth-code"></span></p>
+                    <p><strong>Canal:</strong> <span id="db-canal">PASARELA_LINEA</span></p>
+                </div>
+                <button id="btn-close-modal" class="btn btn-primary">Aceptar</button>
+            </div>
+        </div>
+    </div>
+
+    <footer id="soporte" class="main-footer">
+        <div class="container footer-grid">
+            <div class="footer-col">
+                <h4>EEGSA Pagos</h4>
+                <p>Vinculado directamente a la base de datos <code>api_energia</code>.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Enlaces Legales</h4>
+                <a href="#">Términos y Condiciones</a>
+            </div>
+            <div class="footer-col">
+                <h4>Atención al Cliente</h4>
+                <p>📞 Teleservicio: 2277-7000</p>
+            </div>
+        </div>
+        <div class="footer-bottom text-center">
+            <p>&copy; 2026 Empresa Eléctrica de Guatemala, S.A.</p>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
