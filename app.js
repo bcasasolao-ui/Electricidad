@@ -1,222 +1,475 @@
-document.addEventListener('DOMContentLoaded', () => {
-    
-    // ==========================================
-    // 1. CONFIGURACIÓN DE LA API REAL EN AZURE
-    // ==========================================
-    const API_BASE_URL = 'https://sistemapagostelefonia.azurewebsites.net/api/telefonia';
+/* =============================================
+   API ENERGÍA ELÉCTRICA — app.js
+   ============================================= */
 
-    let currentAccount = null;
-    let currentMontoTotal = 0;
+const API_BASE = 'https://sistemapagosenergia.azurewebsites.net';
 
-    // ==========================================
-    // CONTROL DE ROLES (ADMIN / USUARIO)
-    // ==========================================
-    const roleSelector = document.getElementById('role-selector');
-    
-    roleSelector.addEventListener('change', (e) => {
-        const selectedRole = e.target.value;
-        document.body.setAttribute('data-role', selectedRole);
-        
-        if (selectedRole === 'admin') {
-            cargarHistorialAdmin();
-        }
-    });
+/* ---- Estado global ---- */
+const state = {
+  token: null,
+  rol: null,
+  stats: { lecturas: 0, clientes: 0, pagosEf: 0, pagosBanco: 0 },
+  activity: []
+};
 
-    // ==========================================
-    // 2. CONTROL DE PESTAÑAS (TABS)
-    // ==========================================
-    const methodCards = document.querySelectorAll('.method-card');
-    const tabContents = document.querySelectorAll('.tab-content');
+/* =============================================
+   UTILIDADES — FETCH
+   ============================================= */
 
-    methodCards.forEach(card => {
-        card.addEventListener('click', () => {
-            const targetTab = card.getAttribute('data-tab');
-            methodCards.forEach(c => c.classList.remove('active'));
-            tabContents.forEach(content => content.classList.remove('active'));
-            card.classList.add('active');
-            document.getElementById(`tab-${targetTab}`).classList.add('active');
-        });
-    });
+async function apiFetch(endpoint, method = 'GET', body = null, auth = true) {
+  const headers = { 'Content-Type': 'application/json' };
+  // Solo agrega token si existe (no bloquea en modo prueba)
+  if (auth && state.token) headers['Authorization'] = `Bearer ${state.token}`;
 
-    // ==========================================
-    // 3. CONSULTA DE SALDO REAL (PETICIÓN GET)
-    // ==========================================
-    const formConsulta = document.getElementById('form-consulta');
-    const resultadoSaldo = document.getElementById('resultado-saldo');
-    const errorConsulta = document.getElementById('error-consulta');
-    const formParcial = document.getElementById('form-pago-parcial');
-    const restriccionParcial = document.getElementById('parcial-restriccion');
+  const options = { method, headers };
+  if (body) options.body = JSON.stringify(body);
 
-    formConsulta.addEventListener('submit', (e) => {
-        e.preventDefault();
-        
-        const contadorInput = document.getElementById('id-contador').value.trim();
-        const correlativoInput = document.getElementById('correlativo').value.trim();
-        const urlConsulta = `${API_BASE_URL}?contador=${contadorInput}&correlativo=${correlativoInput}`;
+  const res = await fetch(`${API_BASE}${endpoint}`, options);
 
-        document.getElementById('monto-luz').textContent = "Cargando...";
-        errorConsulta.classList.add('hidden');
-        resultadoSaldo.classList.add('hidden');
+  // Intentar parsear JSON; si falla devolver texto
+  let data = null;
+  const ct = res.headers.get('content-type') || '';
+  if (ct.includes('application/json')) {
+    data = await res.json().catch(() => null);
+  } else {
+    data = await res.text().catch(() => null);
+  }
 
-        fetch(urlConsulta)
-            .then(response => {
-                if (!response.ok) throw new Error(`Error en el servidor: ${response.status}`);
-                return response.json();
-            })
-            .then(cuentaEncontrada => {
-                errorConsulta.classList.add('hidden');
-                currentAccount = cuentaEncontrada;
-                
-                const mesesAcumulados = cuentaEncontrada.recibos ? cuentaEncontrada.recibos.length : 0;
-                currentMontoTotal = cuentaEncontrada.recibos ? cuentaEncontrada.recibos.reduce((sum, r) => sum + r.saldo_pendiente, 0) : 0;
+  return { ok: res.ok, status: res.status, data };
+}
 
-                document.getElementById('nombre-titular').textContent = cuentaEncontrada.nombre_responsable || 'No disponible';
-                document.getElementById('direccion-titular').textContent = cuentaEncontrada.direccion_inmueble || 'No disponible';
-                document.getElementById('meses-acumulados').textContent = mesesAcumulados;
-                document.getElementById('monto-luz').textContent = `Q ${currentMontoTotal.toFixed(2)}`;
+/* =============================================
+   UTILIDADES — UI
+   ============================================= */
 
-                if (mesesAcumulados >= 2) {
-                    formParcial.classList.remove('hidden');
-                    restriccionParcial.classList.add('hidden');
-                } else {
-                    formParcial.classList.add('hidden');
-                    restriccionParcial.classList.remove('hidden');
-                }
+/** Mostrar/ocultar spinner en botón */
+function setLoading(btnId, loading) {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  btn.classList.toggle('loading', loading);
+  btn.disabled = loading;
+}
 
-                resultadoSaldo.classList.remove('hidden');
-            })
-            .catch(error => {
-                console.error("Error al consultar saldo en Azure:", error);
-                resultadoSaldo.classList.add('hidden');
-                errorConsulta.classList.remove('hidden');
-                currentAccount = null;
-            });
-    });
+/** Mostrar alerta dentro de un card */
+function showAlert(id, type, title, msg) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.className = `alert alert-${type} show`;
+  const icon = { success: '✓', error: '✕', info: 'ℹ', warning: '⚠' };
+  const iconEl = document.getElementById(`${id}-icon`);
+  const titleEl = document.getElementById(`${id}-title`);
+  const msgEl   = document.getElementById(`${id}-msg`);
+  if (iconEl)  iconEl.textContent  = icon[type] || 'ℹ';
+  if (titleEl) titleEl.textContent = title;
+  if (msgEl)   msgEl.textContent   = msg;
+}
 
-    // ==========================================
-    // 4. MÁSCARAS DE ENTRADA (TARJETA)
-    // ==========================================
-    const inputCardNumber = document.getElementById('card-number');
-    const inputCardExp = document.getElementById('card-exp');
+/** Ocultar alerta */
+function hideAlert(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.remove('show');
+}
 
-    inputCardNumber.addEventListener('input', (e) => {
-        let value = e.target.value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
-        let parts = [];
-        for (let i = 0, len = value.length; i < len; i += 4) {
-            parts.push(value.substring(i, i + 4));
-        }
-        e.target.value = parts.length > 0 ? parts.join(' ') : value;
-    });
+/** Toast flotante */
+function toast(msg, type = 'success') {
+  const container = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  const icons = { success: '✓', error: '✕', info: 'ℹ' };
+  t.className = `toast toast-${type}`;
+  t.innerHTML = `<span>${icons[type] || '✓'}</span> ${msg}`;
+  container.appendChild(t);
+  setTimeout(() => {
+    t.classList.add('toast-out');
+    t.addEventListener('animationend', () => t.remove());
+  }, 3200);
+}
 
-    inputCardExp.addEventListener('input', (e) => {
-        let value = e.target.value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
-        if (value.length > 2) {
-            e.target.value = value.substring(0, 2) + '/' + value.substring(2, 4);
-        }
-    });
+/** Reset de formulario y alerta */
+function resetForm(formId, alertId) {
+  const form = document.getElementById(formId);
+  if (form) form.reset();
+  if (alertId) hideAlert(alertId);
+}
 
-    // ==========================================
-    // 5. PROCESAMIENTO E INSERTIÓN REAL (POST)
-    // ==========================================
-    const modal = document.getElementById('payment-modal');
-    const modalLoader = document.getElementById('modal-loader');
-    const modalSuccess = document.getElementById('modal-success');
-    const modalMessage = document.getElementById('modal-message');
-    const btnCloseModal = document.getElementById('btn-close-modal');
+/** Agregar entrada al log de actividad */
+function logActivity(icon, text) {
+  state.activity.unshift({ icon, text, time: new Date().toLocaleTimeString() });
+  renderActivity();
+}
 
-    function ejecutarTransaccionReal(montoFinal, canal) {
-        modal.classList.remove('hidden');
-        modalLoader.classList.remove('hidden');
-        modalSuccess.classList.add('hidden');
+function renderActivity() {
+  const log = document.getElementById('activity-log');
+  if (!log) return;
+  if (state.activity.length === 0) {
+    log.innerHTML = `<p style="text-align:center;padding:20px 0;color:var(--c-text-3);">No hay actividad registrada aún.</p>`;
+    return;
+  }
+  log.innerHTML = state.activity.slice(0, 8).map(a => `
+    <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--c-border);">
+      <span style="font-size:18px;">${a.icon}</span>
+      <span style="flex:1;font-size:.85rem;">${a.text}</span>
+      <span style="font-size:.75rem;color:var(--c-text-3);white-space:nowrap;">${a.time}</span>
+    </div>
+  `).join('');
+}
 
-        const transaccionData = {
-            numero_contador: currentAccount.numero_contador,
-            monto_pagado: montoFinal,
-            canal_pago: canal,
-            fecha_pago: new Date().toISOString()
-        };
+/** Actualizar contadores del dashboard */
+function updateStats() {
+  document.getElementById('stat-lecturas').textContent    = state.stats.lecturas;
+  document.getElementById('stat-clientes').textContent    = state.stats.clientes;
+  document.getElementById('stat-pagos-ef').textContent    = state.stats.pagosEf;
+  document.getElementById('stat-pagos-banco').textContent = state.stats.pagosBanco;
+}
 
-        fetch(`${API_BASE_URL}/pagar`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(transaccionData)
-        })
-        .then(response => {
-            if (!response.ok) throw new Error('No se pudo registrar el pago');
-            return response.json();
-        })
-        .then(respuestaBackend => {
-            modalLoader.classList.add('hidden');
-            modalSuccess.classList.remove('hidden');
-            
-            document.getElementById('auth-code').textContent = respuestaBackend.codigo_autorizacion || 'EEG-REAL';
-            document.getElementById('db-canal').textContent = respuestaBackend.canal_pago || canal;
-            modalMessage.innerHTML = `Pago de <strong>Q ${montoFinal.toFixed(2)}</strong> procesado con éxito en Azure para el contador <strong>${currentAccount.numero_contador}</strong>.`;
-        })
-        .catch(error => {
-            console.error("Error al procesar el pago:", error);
-            modalLoader.classList.add('hidden');
-            modal.classList.add('hidden');
-            alert("Hubo un error al guardar el pago.");
-        });
-    }
+/* =============================================
+   NAVEGACIÓN
+   ============================================= */
 
-    document.getElementById('form-pago-linea').addEventListener('submit', (e) => {
-        e.preventDefault();
-        if (!currentAccount) return alert('Consulte un contador válido primero.');
-        ejecutarTransaccionReal(currentMontoTotal, 'PASARELA_LINEA');
-    });
+const viewTitles = {
+  'view-inicio':        'Inicio',
+  'view-lectura':       'Registrar Lectura',
+  'view-cliente':       'Crear Cliente',
+  'view-pago-efectivo': 'Pago en Efectivo',
+  'view-consulta':      'Consultar Deuda',
+  'view-pago-banco':    'Pago Banco'
+};
 
-    formParcial.addEventListener('submit', (e) => {
-        e.preventDefault();
-        if (!currentAccount) return;
-        const porcentaje = document.getElementById('porcentaje-pago').value;
-        ejecutarTransaccionReal(currentMontoTotal * (porcentaje / 100), 'PASARELA_LINEA');
-    });
+function navigateTo(viewId) {
+  // Vistas
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  const target = document.getElementById(viewId);
+  if (target) target.classList.add('active');
 
-    btnCloseModal.addEventListener('click', () => {
-        modal.classList.add('hidden');
-        formConsulta.reset();
-        document.getElementById('form-pago-linea').reset();
-        resultadoSaldo.classList.add('hidden');
-        currentAccount = null;
-    });
+  // Nav items
+  document.querySelectorAll('.nav-item').forEach(n => {
+    n.classList.toggle('active', n.dataset.view === viewId);
+  });
 
-    // ==========================================
-    // LÓGICA EXCLUSIVA DEL PANEL DE ADMINISTRACIÓN
-    // ==========================================
-    const btnRefreshAdmin = document.getElementById('btn-refresh-admin');
-    if(btnRefreshAdmin) {
-        btnRefreshAdmin.addEventListener('click', cargarHistorialAdmin);
-    }
+  // Título topbar
+  const titleEl = document.getElementById('topbar-title');
+  if (titleEl) titleEl.textContent = viewTitles[viewId] || '';
 
-    function cargarHistorialAdmin() {
-        const tbody = document.querySelector('#tabla-pagos-admin tbody');
-        tbody.innerHTML = `<tr><td colspan="4" class="text-center">Cargando registros desde Azure...</td></tr>`;
+  // Cerrar sidebar en móvil
+  closeSidebar();
+}
 
-        // Simulamos o llamamos al GET general de pagos de la API
-        fetch(`${API_BASE_URL}/pagos`) 
-            .then(res => res.ok ? res.json() : throwError())
-            .then(pagos => {
-                tbody.innerHTML = '';
-                if(pagos.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="4" class="text-center">No hay transacciones registradas aún.</td></tr>`;
-                    return;
-                }
-                pagos.forEach(pago => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td><strong>${pago.numero_contador}</strong></td>
-                        <td style="color: var(--success-color); font-weight:600;">Q ${parseFloat(pago.monto_pagado).toFixed(2)}</td>
-                        <td><span class="secure-badge" style="margin:0; padding:4px 8px;">${pago.canal_pago}</span></td>
-                        <td>${new Date(pago.fecha_pago).toLocaleString()}</td>
-                    `;
-                    tbody.appendChild(row);
-                });
-            })
-            .catch(() => {
-                // Si tu backend no soporta un GET general, mostramos una fila limpia de fallback estético
-                tbody.innerHTML = `<tr><td colspan="4" class="text-center" style="color:var(--warning-color);">⚠️ No se pudo conectar al endpoint GET global de Azure o no está configurado.</td></tr>`;
-            });
-    }
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('overlay').classList.remove('show');
+}
+
+/* =============================================
+   AUTH — LOGIN / LOGOUT
+   ============================================= */
+
+/* =============================================
+   MODO PRUEBA — SALTAR LOGIN
+   ============================================= */
+
+document.getElementById('btn-skip-login').addEventListener('click', () => {
+  state.token = null; // sin token real
+  state.rol   = 'Prueba';
+  initDashboard('demo');
+
+  // Mostrar banner de aviso en el dashboard
+  const banner = document.createElement('div');
+  banner.id = 'demo-banner';
+  banner.style.cssText = `
+    background: #fffbeb;
+    border: 1.5px solid #fde68a;
+    color: #92400e;
+    font-size: .8rem;
+    font-weight: 600;
+    padding: 8px 16px;
+    text-align: center;
+    position: sticky;
+    top: 60px;
+    z-index: 49;
+  `;
+  banner.innerHTML = '⚠ Modo prueba — Sin token de autenticación. Las peticiones al backend pueden fallar con 401.';
+  document.querySelector('.main-content').insertBefore(
+    banner,
+    document.querySelector('.page-body')
+  );
 });
+
+/* =============================================
+   AUTH — LOGIN / LOGOUT
+   ============================================= */
+
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  hideAlert('login-alert');
+  setLoading('login-btn', true);
+
+  const credencial = document.getElementById('login-credencial').value.trim();
+  const password   = document.getElementById('login-password').value;
+
+  const { ok, data } = await apiFetch('/api/Auth/login', 'POST',
+    { credencial, password }, false
+  );
+
+  setLoading('login-btn', false);
+
+  if (ok && data && data.token) {
+    state.token = data.token;
+    state.rol   = data.rol || 'Usuario';
+    initDashboard(credencial);
+  } else {
+    const msg = (data && (data.detail || data.title)) || 'Credenciales incorrectas.';
+    document.getElementById('login-alert-msg').textContent = msg;
+    document.getElementById('login-alert').classList.add('show');
+  }
+});
+
+function initDashboard(credencial) {
+  // Ocultar login, mostrar app
+  document.getElementById('login-page').style.display  = 'none';
+  document.getElementById('app-layout').style.display  = 'flex';
+
+  // Datos de usuario en UI
+  const initials = credencial.slice(0, 2).toUpperCase();
+  document.getElementById('user-avatar').textContent     = initials;
+  document.getElementById('user-name-label').textContent = credencial;
+  document.getElementById('user-rol-label').textContent  = state.rol;
+
+  navigateTo('view-inicio');
+  toast(`Bienvenido, ${credencial}`, 'success');
+}
+
+document.getElementById('btn-logout').addEventListener('click', () => {
+  state.token = null;
+  state.rol   = null;
+  state.stats = { lecturas: 0, clientes: 0, pagosEf: 0, pagosBanco: 0 };
+  state.activity = [];
+  document.getElementById('login-page').style.display  = '';
+  document.getElementById('app-layout').style.display  = 'none';
+  document.getElementById('login-form').reset();
+  hideAlert('login-alert');
+  // Quitar banner demo si existe
+  const banner = document.getElementById('demo-banner');
+  if (banner) banner.remove();
+});
+
+/* =============================================
+   AGENCIA LOCAL — REGISTRAR LECTURA
+   ============================================= */
+
+document.getElementById('form-lectura').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  hideAlert('alert-lectura');
+  setLoading('btn-lectura', true);
+
+  const numeroContador = document.getElementById('lectura-contador').value.trim();
+  const kilovatios     = parseInt(document.getElementById('lectura-kw').value);
+
+  const { ok, data } = await apiFetch('/api/Energia/Agencia/lectura', 'POST',
+    { numeroContador, kilovatios }
+  );
+
+  setLoading('btn-lectura', false);
+
+  if (ok) {
+    showAlert('alert-lectura', 'success',
+      'Lectura registrada',
+      `Contador ${numeroContador} — ${kilovatios.toLocaleString()} kW registrados correctamente.`
+    );
+    state.stats.lecturas++;
+    updateStats();
+    logActivity('📟', `Lectura registrada — Contador: ${numeroContador}, ${kilovatios.toLocaleString()} kW`);
+    document.getElementById('form-lectura').reset();
+    toast('Lectura registrada correctamente', 'success');
+  } else {
+    const msg = extraerError(data, 'No se pudo registrar la lectura.');
+    showAlert('alert-lectura', 'error', 'Error al registrar', msg);
+    toast('Error al registrar lectura', 'error');
+  }
+});
+
+/* =============================================
+   AGENCIA LOCAL — CREAR CLIENTE
+   ============================================= */
+
+document.getElementById('form-cliente').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  hideAlert('alert-cliente');
+  setLoading('btn-cliente', true);
+
+  const body = {
+    dpi:               document.getElementById('cliente-dpi').value.trim(),
+    nombre:            document.getElementById('cliente-nombre').value.trim(),
+    apellido:          document.getElementById('cliente-apellido').value.trim(),
+    correo:            document.getElementById('cliente-correo').value.trim(),
+    direccionInmueble: document.getElementById('cliente-direccion').value.trim()
+  };
+
+  const { ok, status, data } = await apiFetch('/api/Energia/Agencia/cliente', 'POST', body);
+
+  setLoading('btn-cliente', false);
+
+  if (ok || status === 201) {
+    showAlert('alert-cliente', 'success',
+      'Cliente creado exitosamente',
+      `${body.nombre} ${body.apellido} ha sido registrado en el sistema.`
+    );
+    state.stats.clientes++;
+    updateStats();
+    logActivity('👤', `Cliente creado — ${body.nombre} ${body.apellido} (DPI: ${body.dpi})`);
+    document.getElementById('form-cliente').reset();
+    toast('Cliente creado correctamente', 'success');
+  } else {
+    const msg = extraerError(data, 'No se pudo crear el cliente.');
+    showAlert('alert-cliente', 'error', 'Error al crear cliente', msg);
+    toast('Error al crear cliente', 'error');
+  }
+});
+
+/* =============================================
+   AGENCIA LOCAL — PAGO EN EFECTIVO
+   ============================================= */
+
+document.getElementById('form-pago-ef').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  hideAlert('alert-pago-ef');
+  setLoading('btn-pago-ef', true);
+
+  const numeroContador = document.getElementById('pagoef-contador').value.trim();
+  const montoRecibido  = parseFloat(document.getElementById('pagoef-monto').value);
+
+  const { ok, data } = await apiFetch('/api/Energia/Agencia/pago-efectivo', 'POST',
+    { numeroContador, montoRecibido }
+  );
+
+  setLoading('btn-pago-ef', false);
+
+  if (ok) {
+    showAlert('alert-pago-ef', 'success',
+      'Pago registrado',
+      `Pago de Q ${montoRecibido.toFixed(2)} para contador ${numeroContador} procesado.`
+    );
+    state.stats.pagosEf++;
+    updateStats();
+    logActivity('💵', `Pago efectivo — Contador: ${numeroContador}, Q ${montoRecibido.toFixed(2)}`);
+    document.getElementById('form-pago-ef').reset();
+    toast('Pago en efectivo registrado', 'success');
+  } else {
+    const msg = extraerError(data, 'No se pudo procesar el pago.');
+    showAlert('alert-pago-ef', 'error', 'Error en el pago', msg);
+    toast('Error al registrar pago', 'error');
+  }
+});
+
+/* =============================================
+   BANCO — CONSULTAR DEUDA
+   ============================================= */
+
+document.getElementById('form-consulta').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  hideAlert('alert-consulta');
+  document.getElementById('result-consulta').classList.remove('show');
+  setLoading('btn-consulta', true);
+
+  const numeroContador = document.getElementById('consulta-contador').value.trim();
+
+  const { ok, data } = await apiFetch(
+    `/api/Energia/Banco/consultar/${encodeURIComponent(numeroContador)}`,
+    'GET', null
+  );
+
+  setLoading('btn-consulta', false);
+
+  if (ok && data) {
+    const saldo = parseFloat(data.saldoPendiente) || 0;
+    document.getElementById('result-contador-num').textContent = data.numeroContador || numeroContador;
+    document.getElementById('result-saldo').textContent        = `Q ${saldo.toFixed(2)}`;
+
+    const badge = document.getElementById('result-badge');
+    if (saldo > 0) {
+      badge.className = 'result-badge badge-debt';
+      badge.textContent = '⚠ Con deuda pendiente';
+    } else {
+      badge.className = 'result-badge badge-clear';
+      badge.textContent = '✓ Sin deuda';
+    }
+
+    document.getElementById('result-consulta').classList.add('show');
+    logActivity('🔍', `Consulta deuda — Contador: ${numeroContador}, Saldo: Q ${saldo.toFixed(2)}`);
+    toast('Consulta realizada correctamente', 'success');
+  } else {
+    const msg = extraerError(data, 'No se encontró el contador.');
+    showAlert('alert-consulta', 'error', 'Error en la consulta', msg);
+    toast('Error al consultar', 'error');
+  }
+});
+
+function resetConsulta() {
+  resetForm('form-consulta', 'alert-consulta');
+  document.getElementById('result-consulta').classList.remove('show');
+}
+
+/* =============================================
+   BANCO — PAGO DESDE BANCO
+   ============================================= */
+
+document.getElementById('form-pago-banco').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  hideAlert('alert-pago-banco');
+  setLoading('btn-pago-banco', true);
+
+  const numeroContador = document.getElementById('pagobanco-contador').value.trim();
+  const monto          = parseFloat(document.getElementById('pagobanco-monto').value);
+
+  const { ok, data } = await apiFetch('/api/Energia/Banco/pagar', 'POST',
+    { numeroContador, monto }
+  );
+
+  setLoading('btn-pago-banco', false);
+
+  if (ok) {
+    showAlert('alert-pago-banco', 'success',
+      'Pago bancario enviado',
+      `Notificación de Q ${monto.toFixed(2)} para contador ${numeroContador} enviada correctamente.`
+    );
+    state.stats.pagosBanco++;
+    updateStats();
+    logActivity('🏦', `Pago banco — Contador: ${numeroContador}, Q ${monto.toFixed(2)}`);
+    document.getElementById('form-pago-banco').reset();
+    toast('Pago bancario procesado', 'success');
+  } else {
+    const msg = extraerError(data, 'No se pudo procesar el pago bancario.');
+    showAlert('alert-pago-banco', 'error', 'Error en el pago', msg);
+    toast('Error al procesar pago bancario', 'error');
+  }
+});
+
+/* =============================================
+   HELPER — EXTRAER MENSAJE DE ERROR
+   ============================================= */
+
+function extraerError(data, fallback) {
+  if (!data) return fallback;
+  if (typeof data === 'string') return data || fallback;
+  return data.detail || data.title || data.message || fallback;
+}
+
+/* =============================================
+   EVENTOS DE NAVEGACIÓN
+   ============================================= */
+
+// Nav sidebar
+document.querySelectorAll('.nav-item[data-view]').forEach(item => {
+  item.addEventListener('click', () => navigateTo(item.dataset.view));
+});
+
+// Botones de acceso rápido (inicio)
+document.querySelectorAll('button[data-view]').forEach(btn => {
+  btn.addEventListener('click', () => navigateTo(btn.dataset.view));
+});
+
+// Menú hamburguesa móvil
+document.getElementById('menu-toggle').addEventListener('click', () => {
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('overlay').classList.add('show');
+});
+
+document.getElementById('overlay').addEventListener('click', closeSidebar);
