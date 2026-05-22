@@ -1,250 +1,441 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EEGSA - Pago de Servicios de Electricidad</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="./styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>API Energía Eléctrica — Panel de Gestión</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
-<body data-role="user"> <header class="main-header">
-        <div class="container navbar-container">
-            <div class="logo">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" fill="var(--accent-color)" stroke="var(--accent-color)" stroke-width="2" stroke-linejoin="round"/>
-                </svg>
-                <span class="logo-text">EEGSA <small>Pagos</small></span>
-            </div>
-            <nav class="main-nav">
-                <a href="#consultar" class="nav-link view-user">Consulta</a>
-                <a href="#formas-pago" class="nav-link view-user">Formas de Pago</a>
-                <a href="#admin-panel" class="nav-link view-admin">Panel Admin</a>
-                <a href="#soporte" class="nav-link">Soporte</a>
-            </nav>
-            <div class="auth-action">
-                <select id="role-selector" class="form-select" style="padding: 8px 12px; width: auto; background-color: var(--surface-white); color: var(--primary-dark);">
-                    <option value="user">Vista: Cliente</option>
-                    <option value="admin">Vista: Administrador</option>
-                </select>
-            </div>
-        </div>
-    </header>
+<body>
 
-    <main>
-        <section id="consultar" class="hero-section view-user">
-            <div class="container hero-grid">
-                <div class="hero-info">
-                    <h1>Paga tu servicio de luz de forma rápida y segura</h1>
-                    <p>Consulta tu saldo pendiente ingresando los datos de tu factura y realiza tu pago en línea sin salir de casa.</p>
-                </div>
-                <div class="hero-card">
-                    <form id="form-consulta" class="payment-form">
-                        <div class="form-group">
-                            <label for="id-contador">Número de Contador (NIS)</label>
-                            <input type="text" id="id-contador" placeholder="Ej. 123456" required>
-                            <span class="form-hint">Prueba con 123456 (2 meses) o 789012 (1 mes)</span>
-                        </div>
-                        <div class="form-group">
-                            <label for="correlativo">Número Correlativo</label>
-                            <input type="text" id="correlativo" placeholder="Ej. COR-98765" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary btn-block">Consultar Saldo</button>
-                    </form>
-                    
-                    <div id="error-consulta" class="warning-box hidden" style="margin-top:15px; background-color:#FEE2E2; border-color:#EF4444; color:#991B1B;">
-                        <p>⚠️ No se encontraron registros con los datos ingresados. Verifique e intente de nuevo.</p>
-                    </div>
+<!-- =============================================
+     LOGIN PAGE
+     ============================================= -->
+<div id="login-page" class="login-page">
+  <div class="login-card">
 
-                    <div id="resultado-saldo" class="balance-result hidden">
-                        <div class="balance-header">
-                            <span>Total Pendiente</span>
-                            <strong id="monto-luz">Q 0.00</strong>
-                        </div>
-                        <p class="balance-detail">👤 <strong>Titular:</strong> <span id="nombre-titular">---</span></p>
-                        <p class="balance-detail">🏠 <strong>Dirección:</strong> <span id="direccion-titular">---</span></p>
-                        <p class="balance-detail">📅 <strong>Recibos pendientes:</strong> <span id="meses-acumulados">0</span></p>
-                        <a href="#formas-pago" class="btn btn-success btn-block text-center" style="margin-top: 15px;">Proceder a Pagar</a>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section id="formas-pago" class="payment-methods-section container view-user">
-            <div class="section-title">
-                <h2>Formas de Pago Disponibles</h2>
-                <p>Elige la opción que mejor se adapte a tus necesidades</p>
-            </div>
-
-            <div class="methods-grid">
-                <div class="method-card active" data-tab="online">
-                    <div class="method-icon">💳</div>
-                    <h3>Pago en Línea</h3>
-                    <p>Tarjeta de Crédito o Débito</p>
-                </div>
-                <div class="method-card" data-tab="banca">
-                    <div class="method-icon">📱</div>
-                    <h3>Banca Móvil</h3>
-                    <p>Bancos del sistema</p>
-                </div>
-                <div class="method-card" data-tab="ventanilla">
-                    <div class="method-icon">🏦</div>
-                    <h3>Ventanilla / ATM</h3>
-                    <p>Pagos físicos y cajeros</p>
-                </div>
-                <div class="method-card" data-tab="parcial">
-                    <div class="method-icon">📄</div>
-                    <h3>Pago Parcial</h3>
-                    <p>Convenios de 2 meses o más</p>
-                </div>
-            </div>
-
-            <div class="methods-content-wrapper">
-                <div id="tab-online" class="tab-content active">
-                    <div class="secure-badge">🔒 Conexión cifrada de alta seguridad (Canal: PASARELA_LINEA)</div>
-                    <form id="form-pago-linea" class="inner-form">
-                        <div class="form-group">
-                            <label for="card-name">Nombre en la Tarjeta</label>
-                            <input type="text" id="card-name" required placeholder="JUAN PEREZ">
-                        </div>
-                        <div class="form-group">
-                            <label for="card-number">Número de Tarjeta</label>
-                            <input type="text" id="card-number" maxlength="19" placeholder="4000 1234 5678 9010" required>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="card-exp">Expiración (MM/AA)</label>
-                                <input type="text" id="card-exp" maxlength="5" placeholder="12/29" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="card-cvv">CVV</label>
-                                <input type="password" id="card-cvv" maxlength="4" placeholder="***" required>
-                            </div>
-                        </div>
-                        <button type="submit" class="btn btn-accent btn-block">Pagar Monto Consultado</button>
-                    </form>
-                </div>
-
-                <div id="tab-banca" class="tab-content">
-                    <div class="banca-instructions">
-                        <p>Puedes pagar desde la app de tu banco usando tu <strong>Número de Contador</strong>. Se registrará bajo el canal <code>SISTEMA_BANCARIO</code>.</p>
-                        <div class="bank-logos-grid">
-                            <div class="bank-item">🏦 Banco Industrial (Bi en Línea)</div>
-                            <div class="bank-item">🏦 Banrural (Banca Virtual)</div>
-                            <div class="bank-item">🏦 G&T Continental</div>
-                            <div class="bank-item">🏦 BAM (BAMnet)</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="tab-ventanilla" class="tab-content">
-                    <p>Puntos de atención física para el canal <code>SISTEMA_BANCARIO</code> u <code>OFICINA_EMPRESA</code>:</p>
-                    <div class="info-cards-grid">
-                        <div class="info-subcard">
-                            <h4>Agencias Bancarias</h4>
-                            <p>Presenta tu número de contador en cualquier ventanilla.</p>
-                        </div>
-                        <div class="info-subcard">
-                            <h4>Cajeros Automáticos</h4>
-                            <p>Utiliza la red 5B seleccionando Pago de Servicios -> EEGSA.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="tab-parcial" class="tab-content">
-                    <div id="parcial-restriccion" class="warning-box">
-                        <h4>Aviso Importante</h4>
-                        <p>La solicitud de pago parcial aplica únicamente si tu consulta en base de datos arroja un saldo acumulado de <strong>2 meses o más</strong>.</p>
-                    </div>
-                    <form id="form-pago-parcial" class="inner-form hidden">
-                        <p>Tu cuenta califica para un abono parcial sobre los recibos pendientes más antiguos:</p>
-                        <div class="form-group">
-                            <label for="porcentaje-pago">Monto a abonar</label>
-                            <select id="porcentaje-pago" class="form-select">
-                                <option value="50">Abonar el 50% del saldo total</option>
-                                <option value="75">Abonar el 75% del saldo total</option>
-                            </select>
-                        </div>
-                        <button type="submit" class="btn btn-primary btn-block">Generar Boleta de Pago Parcial</button>
-                    </form>
-                </div>
-            </div>
-        </section>
-
-        <section id="admin-panel" class="container view-admin" style="padding: 60px 20px;">
-            <div class="section-title">
-                <h2>Panel de Control del Administrador</h2>
-                <p>Monitoreo en tiempo real de transacciones guardadas en la base de datos de Azure</p>
-            </div>
-            
-            <div class="methods-content-wrapper">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h3>Historial General de Pagos Procesados</h3>
-                    <button id="btn-refresh-admin" class="btn btn-primary">🔄 Actualizar Datos</button>
-                </div>
-                
-                <div style="overflow-x: auto;">
-                    <table class="admin-table" id="tabla-pagos-admin">
-                        <thead>
-                            <tr>
-                                <th>Contador (NIS)</th>
-                                <th>Monto Pagado</th>
-                                <th>Canal de Pago</th>
-                                <th>Fecha del Registro</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td colspan="4" class="text-center" style="padding: 20px; color: var(--text-muted);">Haga clic en 'Actualizar Datos' para cargar la información de Azure.</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <div id="payment-modal" class="modal-overlay hidden">
-        <div class="modal-card">
-            <div id="modal-loader" class="modal-loader-content">
-                <div class="spinner"></div>
-                <h3>Procesando con la pasarela...</h3>
-                <p>Insertando registro seguro en <code>pagos_procesados</code>...</p>
-            </div>
-            <div id="modal-success" class="modal-success-content hidden">
-                <div class="success-icon">✓</div>
-                <h3>¡Transacción Exitosa!</h3>
-                <p id="modal-message"></p>
-                <div class="receipt-code">
-                    <p><strong>Código Auth (DB):</strong> <span id="auth-code"></span></p>
-                    <p><strong>Canal:</strong> <span id="db-canal">PASARELA_LINEA</span></p>
-                </div>
-                <button id="btn-close-modal" class="btn btn-primary">Aceptar</button>
-            </div>
-        </div>
+    <div class="login-logo">
+      <div class="logo-icon">⚡</div>
+      <div class="logo-text">
+        Energía Eléctrica
+        <span>Sistema de Gestión</span>
+      </div>
     </div>
 
-    <footer id="soporte" class="main-footer">
-        <div class="container footer-grid">
-            <div class="footer-col">
-                <h4>EEGSA Pagos</h4>
-                <p>Vinculado directamente a la base de datos <code>api_energia</code>.</p>
-            </div>
-            <div class="footer-col">
-                <h4>Enlaces Legales</h4>
-                <a href="#">Términos y Condiciones</a>
-            </div>
-            <div class="footer-col">
-                <h4>Atención al Cliente</h4>
-                <p>📞 Teleservicio: 2277-7000</p>
-            </div>
-        </div>
-        <div class="footer-bottom text-center">
-            <p>&copy; 2026 Empresa Eléctrica de Guatemala, S.A.</p>
-        </div>
-    </footer>
+    <h1 class="login-title">Iniciar sesión</h1>
+    <p class="login-subtitle">Ingresa tus credenciales para continuar</p>
 
-    <script src="app.js"></script>
+    <div id="login-alert" class="alert alert-error">
+      <span class="alert-icon">✕</span>
+      <div class="alert-body">
+        <div class="alert-title">Error de autenticación</div>
+        <div class="alert-msg" id="login-alert-msg">Credenciales incorrectas.</div>
+      </div>
+    </div>
+
+    <form id="login-form" autocomplete="off">
+      <div class="form-grid single">
+        <div class="form-group">
+          <label for="login-credencial">Credencial <span class="required">*</span></label>
+          <input type="text" id="login-credencial" placeholder="Ej. admin01" required />
+        </div>
+        <div class="form-group">
+          <label for="login-password">Contraseña <span class="required">*</span></label>
+          <input type="password" id="login-password" placeholder="••••••••" required />
+        </div>
+      </div>
+      <div style="margin-top:22px;">
+        <button type="submit" class="btn btn-primary btn-lg btn-full" id="login-btn">
+          <div class="btn-spinner"></div>
+          <span class="btn-label">Ingresar</span>
+        </button>
+      </div>
+
+      <div style="margin-top:12px;text-align:center;">
+        <button type="button" class="btn btn-ghost btn-full" id="btn-skip-login">
+          🚀 Entrar sin login (modo prueba)
+        </button>
+      </div>
+    </form>
+
+  </div>
+</div>
+
+
+<!-- =============================================
+     DASHBOARD APP
+     ============================================= -->
+<div id="app-layout" class="app-layout" style="display:none;">
+
+  <!-- Overlay móvil -->
+  <div class="overlay" id="overlay"></div>
+
+  <!-- ---- SIDEBAR ---- -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon">⚡</div>
+      <div class="brand-name">
+        EnergíaApp
+        <small id="user-rol-label">—</small>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+
+      <div class="sidebar-section-label">General</div>
+      <li class="nav-item active" data-view="view-inicio">
+        <span class="nav-icon">🏠</span> Inicio
+      </li>
+
+      <div class="sidebar-section-label">Agencia Local</div>
+      <li class="nav-item" data-view="view-lectura">
+        <span class="nav-icon">📟</span> Registrar Lectura
+      </li>
+      <li class="nav-item" data-view="view-cliente">
+        <span class="nav-icon">👤</span> Crear Cliente
+      </li>
+      <li class="nav-item" data-view="view-pago-efectivo">
+        <span class="nav-icon">💵</span> Pago en Efectivo
+      </li>
+
+      <div class="sidebar-section-label">Integración Bancaria</div>
+      <li class="nav-item" data-view="view-consulta">
+        <span class="nav-icon">🔍</span> Consultar Deuda
+      </li>
+      <li class="nav-item" data-view="view-pago-banco">
+        <span class="nav-icon">🏦</span> Pago Banco
+      </li>
+
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="btn-logout" id="btn-logout">
+        <span>🚪</span> Cerrar sesión
+      </button>
+    </div>
+  </aside>
+
+  <!-- ---- MAIN ---- -->
+  <div class="main-content">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button class="menu-toggle" id="menu-toggle">☰</button>
+        <span class="topbar-title" id="topbar-title">Inicio</span>
+      </div>
+      <div class="topbar-right">
+        <div class="user-chip">
+          <div class="avatar" id="user-avatar">U</div>
+          <span id="user-name-label">Usuario</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Page body -->
+    <main class="page-body">
+
+      <!-- ======= INICIO ======= -->
+      <section id="view-inicio" class="view active">
+        <div class="page-header">
+          <h2>Panel de Control</h2>
+          <p>Resumen del sistema de gestión de energía eléctrica</p>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Lecturas registradas</div>
+            <div class="stat-value" id="stat-lecturas">0</div>
+            <div class="stat-sub">Esta sesión</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Clientes creados</div>
+            <div class="stat-value" id="stat-clientes">0</div>
+            <div class="stat-sub">Esta sesión</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Pagos efectivo</div>
+            <div class="stat-value" id="stat-pagos-ef">0</div>
+            <div class="stat-sub">Esta sesión</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Pagos banco</div>
+            <div class="stat-value" id="stat-pagos-banco">0</div>
+            <div class="stat-sub">Esta sesión</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">⚡ Accesos rápidos</div>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;">
+            <button class="btn btn-primary"  data-view="view-lectura">📟 Nueva Lectura</button>
+            <button class="btn btn-green"    data-view="view-cliente">👤 Nuevo Cliente</button>
+            <button class="btn btn-yellow"   data-view="view-pago-efectivo">💵 Pago Efectivo</button>
+            <button class="btn btn-ghost"    data-view="view-consulta">🔍 Consultar Deuda</button>
+            <button class="btn btn-purple"   data-view="view-pago-banco">🏦 Pago Banco</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:18px;">
+          <div class="card-title">📋 Actividad reciente</div>
+          <div id="activity-log" style="font-size:.85rem;color:var(--c-text-2);">
+            <p style="text-align:center;padding:20px 0;color:var(--c-text-3);">
+              No hay actividad registrada aún.
+            </p>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ======= REGISTRAR LECTURA ======= -->
+      <section id="view-lectura" class="view">
+        <div class="page-header">
+          <h2>📟 Registrar Lectura</h2>
+          <p>Registra la lectura de kilovatios de un contador</p>
+        </div>
+        <div class="card">
+          <div class="card-title">
+            <div class="card-icon tag-blue">📟</div>
+            Datos de lectura
+          </div>
+
+          <div id="alert-lectura" class="alert">
+            <span class="alert-icon" id="alert-lectura-icon"></span>
+            <div class="alert-body">
+              <div class="alert-title" id="alert-lectura-title"></div>
+              <div class="alert-msg"   id="alert-lectura-msg"></div>
+            </div>
+          </div>
+
+          <form id="form-lectura">
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="lectura-contador">Número de Contador <span class="required">*</span></label>
+                <input type="text" id="lectura-contador" placeholder="Ej. CTR-00123" maxlength="30" required />
+                <span class="form-hint">Máx. 30 caracteres</span>
+              </div>
+              <div class="form-group">
+                <label for="lectura-kw">Kilovatios <span class="required">*</span></label>
+                <input type="number" id="lectura-kw" placeholder="Ej. 1250" min="1" max="2147483647" required />
+                <span class="form-hint">Min: 1 · Max: 2,147,483,647</span>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn btn-ghost" onclick="resetForm('form-lectura','alert-lectura')">Limpiar</button>
+              <button type="submit" class="btn btn-primary" id="btn-lectura">
+                <div class="btn-spinner"></div>
+                <span class="btn-label">Registrar Lectura</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+
+      <!-- ======= CREAR CLIENTE ======= -->
+      <section id="view-cliente" class="view">
+        <div class="page-header">
+          <h2>👤 Crear Cliente</h2>
+          <p>Registra un nuevo cliente con su contador asignado</p>
+        </div>
+        <div class="card">
+          <div class="card-title">
+            <div class="card-icon tag-green">👤</div>
+            Datos del cliente
+          </div>
+
+          <div id="alert-cliente" class="alert">
+            <span class="alert-icon" id="alert-cliente-icon"></span>
+            <div class="alert-body">
+              <div class="alert-title" id="alert-cliente-title"></div>
+              <div class="alert-msg"   id="alert-cliente-msg"></div>
+            </div>
+          </div>
+
+          <form id="form-cliente">
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="cliente-dpi">DPI <span class="required">*</span></label>
+                <input type="text" id="cliente-dpi" placeholder="Ej. 1234567890101" maxlength="20" required />
+                <span class="form-hint">Máx. 20 caracteres</span>
+              </div>
+              <div class="form-group">
+                <label for="cliente-correo">Correo electrónico <span class="required">*</span></label>
+                <input type="email" id="cliente-correo" placeholder="cliente@correo.com" maxlength="150" required />
+              </div>
+              <div class="form-group">
+                <label for="cliente-nombre">Nombre <span class="required">*</span></label>
+                <input type="text" id="cliente-nombre" placeholder="Ej. Juan" maxlength="100" required />
+              </div>
+              <div class="form-group">
+                <label for="cliente-apellido">Apellido <span class="required">*</span></label>
+                <input type="text" id="cliente-apellido" placeholder="Ej. Pérez" maxlength="100" required />
+              </div>
+              <div class="form-group full">
+                <label for="cliente-direccion">Dirección del inmueble <span class="required">*</span></label>
+                <input type="text" id="cliente-direccion" placeholder="Ej. 5a Av. 3-22 Zona 1, Guatemala" maxlength="255" required />
+                <span class="form-hint">Máx. 255 caracteres</span>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn btn-ghost" onclick="resetForm('form-cliente','alert-cliente')">Limpiar</button>
+              <button type="submit" class="btn btn-green" id="btn-cliente">
+                <div class="btn-spinner"></div>
+                <span class="btn-label">Crear Cliente</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+
+      <!-- ======= PAGO EFECTIVO ======= -->
+      <section id="view-pago-efectivo" class="view">
+        <div class="page-header">
+          <h2>💵 Pago en Efectivo</h2>
+          <p>Registra un pago en efectivo recibido en agencia</p>
+        </div>
+        <div class="card">
+          <div class="card-title">
+            <div class="card-icon tag-yellow">💵</div>
+            Datos del pago
+          </div>
+
+          <div id="alert-pago-ef" class="alert">
+            <span class="alert-icon" id="alert-pago-ef-icon"></span>
+            <div class="alert-body">
+              <div class="alert-title" id="alert-pago-ef-title"></div>
+              <div class="alert-msg"   id="alert-pago-ef-msg"></div>
+            </div>
+          </div>
+
+          <form id="form-pago-ef">
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="pagoef-contador">Número de Contador <span class="required">*</span></label>
+                <input type="text" id="pagoef-contador" placeholder="Ej. CTR-00123" maxlength="30" required />
+                <span class="form-hint">Máx. 30 caracteres</span>
+              </div>
+              <div class="form-group">
+                <label for="pagoef-monto">Monto Recibido (Q) <span class="required">*</span></label>
+                <input type="number" id="pagoef-monto" placeholder="Ej. 250.00" min="0.01" step="0.01" required />
+                <span class="form-hint">Mínimo Q 0.01</span>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn btn-ghost" onclick="resetForm('form-pago-ef','alert-pago-ef')">Limpiar</button>
+              <button type="submit" class="btn btn-yellow" id="btn-pago-ef">
+                <div class="btn-spinner"></div>
+                <span class="btn-label">Registrar Pago</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+
+      <!-- ======= CONSULTAR DEUDA ======= -->
+      <section id="view-consulta" class="view">
+        <div class="page-header">
+          <h2>🔍 Consultar Deuda</h2>
+          <p>Consulta el saldo pendiente de un contador (integración bancaria)</p>
+        </div>
+        <div class="card">
+          <div class="card-title">
+            <div class="card-icon tag-blue">🔍</div>
+            Búsqueda por contador
+          </div>
+
+          <div id="alert-consulta" class="alert">
+            <span class="alert-icon" id="alert-consulta-icon"></span>
+            <div class="alert-body">
+              <div class="alert-title" id="alert-consulta-title"></div>
+              <div class="alert-msg"   id="alert-consulta-msg"></div>
+            </div>
+          </div>
+
+          <form id="form-consulta">
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="consulta-contador">Número de Contador <span class="required">*</span></label>
+                <input type="text" id="consulta-contador" placeholder="Ej. CTR-00123" maxlength="30" required />
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn btn-ghost" onclick="resetConsulta()">Limpiar</button>
+              <button type="submit" class="btn btn-primary" id="btn-consulta">
+                <div class="btn-spinner"></div>
+                <span class="btn-label">🔍 Consultar</span>
+              </button>
+            </div>
+          </form>
+
+          <!-- Resultado -->
+          <div class="result-box" id="result-consulta">
+            <div class="result-label">Número de Contador</div>
+            <div style="font-family:var(--font-mono);font-weight:600;color:var(--c-text-2);margin-bottom:14px;" id="result-contador-num">—</div>
+            <div class="result-label">Saldo Pendiente</div>
+            <div class="result-value" id="result-saldo">Q 0.00</div>
+            <div>
+              <span class="result-badge" id="result-badge">—</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ======= PAGO BANCO ======= -->
+      <section id="view-pago-banco" class="view">
+        <div class="page-header">
+          <h2>🏦 Pago desde Banco</h2>
+          <p>Notifica un pago procesado por integración bancaria</p>
+        </div>
+        <div class="card">
+          <div class="card-title">
+            <div class="card-icon tag-purple">🏦</div>
+            Notificación de pago
+          </div>
+
+          <div id="alert-pago-banco" class="alert">
+            <span class="alert-icon" id="alert-pago-banco-icon"></span>
+            <div class="alert-body">
+              <div class="alert-title" id="alert-pago-banco-title"></div>
+              <div class="alert-msg"   id="alert-pago-banco-msg"></div>
+            </div>
+          </div>
+
+          <form id="form-pago-banco">
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="pagobanco-contador">Número de Contador <span class="required">*</span></label>
+                <input type="text" id="pagobanco-contador" placeholder="Ej. CTR-00123" maxlength="30" required />
+                <span class="form-hint">Máx. 30 caracteres</span>
+              </div>
+              <div class="form-group">
+                <label for="pagobanco-monto">Monto (Q) <span class="required">*</span></label>
+                <input type="number" id="pagobanco-monto" placeholder="Ej. 500.00" min="0.01" step="0.01" required />
+                <span class="form-hint">Mínimo Q 0.01</span>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn btn-ghost" onclick="resetForm('form-pago-banco','alert-pago-banco')">Limpiar</button>
+              <button type="submit" class="btn btn-purple" id="btn-pago-banco">
+                <div class="btn-spinner"></div>
+                <span class="btn-label">Enviar Pago</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+    </main>
+  </div><!-- /main-content -->
+</div><!-- /app-layout -->
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<!-- Scripts -->
+<script src="app.js"></script>
 </body>
 </html>
